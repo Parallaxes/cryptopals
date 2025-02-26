@@ -12,5 +12,9 @@
 // Always operate on raw bytes, never on encoded strings. Only use hex and base64 for pretty-printing.
 
 pub fn main() {
-    todo!();
+    let input = "49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d";
+    let decoded = hex::decode(input).unwrap();
+    let encoded = base64::encode(&decoded);
+    
+    println!("{}", encoded);
 }
