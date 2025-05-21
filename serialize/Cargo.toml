@@ -1,0 +1,12 @@
+[package]
+name = "serialize"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+base64 = "0.22.1"
+hex = "0.4.3"
+
+[lib]
+name = "serialize"
+path = "src/lib.rs"
