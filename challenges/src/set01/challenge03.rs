@@ -76,7 +76,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     ]);
 
     let mut results: Vec<(String, f32)> = Vec::new();
-    for i in 0..=127 {
+    for i in 0..=1 {
         let key = i as u8;
         let input_bytes = from_hex(input).unwrap();
         let buffer: Vec<u8> = input_bytes.iter().map(|b| b ^ key).collect();
@@ -87,7 +87,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     results.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
-    for (s, score) in results.iter().take(10) {
+    for (s, score) in results.iter().take(100) {
         println!("[{}: {}]", s, score);
     }
     
@@ -104,6 +104,7 @@ fn calc_char_freqs(input: &str) -> (HashMap<char, f32>, u32) {
         if ('a'..='z').contains(&char) {
             *char_freq.entry(char).or_insert(0.0) += 1.0;
         } else {
+            println!("Invalid! [{}]", char);
             invalid_cnt += 1;
         }
     }
@@ -120,7 +121,7 @@ fn calc_score(input: &str, letters: HashMap<char, (u32, f32)>, diagraphs: HashMa
     let input = input.trim().to_ascii_lowercase();
     let char_freq = calc_char_freqs(&input);
     let mut sum = 0.0 as f32;
-
+    
     for (char, cnt) in char_freq.0 {
         if let Some((_, expected_freq)) = letters.get(&char) {
             sum += (cnt - expected_freq).abs();
