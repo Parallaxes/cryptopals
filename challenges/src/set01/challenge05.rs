@@ -1,5 +1,5 @@
-use xor::Xor;
 use serialize::Serialize;
+use xor::Xor;
 
 pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     print!("Set 01 Challenge 05: ");
