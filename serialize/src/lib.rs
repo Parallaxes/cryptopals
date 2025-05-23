@@ -28,6 +28,16 @@ impl Serialize for &[u8] {
     }
 }
 
+impl Serialize for Vec<u8> {
+    fn to_hex(self) -> String {
+        self.iter().map(|b| format!("{:02x}", b)).collect()
+    }
+
+    fn to_base64(self) -> Option<String> {
+        Some(general_purpose::STANDARD.encode(&self))
+    }
+}
+
 pub fn from_hex(input: &str) -> Option<Vec<u8>> {
     let mut bytes = Vec::with_capacity(input.len() / 2);
     for chunk in input.as_bytes().chunks(2) {
