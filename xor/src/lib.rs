@@ -1,7 +1,7 @@
-use std::hash::Hash;
 use std::collections::HashMap;
+use std::hash::Hash;
 
-use serialize::{Serialize, from_hex, string_from_vec};
+use serialize::{from_hex, string_from_vec, Serialize};
 
 pub trait Xor {
     fn fixed_xor(self, input: &str) -> Vec<u8>;
@@ -15,7 +15,6 @@ impl Xor for &str {
         buf1.iter().zip(buf2.iter()).map(|(a, b)| a ^ b).collect()
     }
 }
-
 
 // Attempted entropy approach to Set 01 Challenge 03
 // fn char_entropy(input: &str) -> f32 {

@@ -1,9 +1,9 @@
-use xor::Xor;
 use serialize::Serialize;
+use xor::Xor;
 
 pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     print!("Set 01 Challenge 02: ");
-    
+
     let buf1 = "1c0111001f010100061a024b53535009181c";
     let buf2 = "686974207468652062756c6c277320657965";
 

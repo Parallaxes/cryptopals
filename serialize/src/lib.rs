@@ -7,11 +7,8 @@ pub trait Serialize {
 
 impl Serialize for &str {
     fn to_hex(self) -> String {
-        self
-            .chars()
-            .map(|c| {
-                format!("{:02X}", c as u8)
-            })
+        self.chars()
+            .map(|c| format!("{:02X}", c as u8))
             .collect::<Vec<_>>()
             .join("")
     }
