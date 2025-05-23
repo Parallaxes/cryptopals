@@ -18,7 +18,8 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn brute(input: String) -> String {
-    let mut results: Vec<(String, f32)> = input.lines().map(|line| break_single_xor(line)).collect();
+    let mut results: Vec<(String, f32)> =
+        input.lines().map(|line| break_single_xor(line)).collect();
 
     if results.is_empty() {
         return "No valid strings found".to_string();

@@ -1,7 +1,4 @@
-use std::collections::HashMap;
-use std::hash::Hash;
-
-use serialize::{from_hex, string_from_vec, Serialize};
+use serialize::from_hex;
 
 pub trait Xor {
     fn fixed_xor(self, input: &str) -> Vec<u8>;
