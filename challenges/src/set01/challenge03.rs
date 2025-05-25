@@ -36,7 +36,14 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     print!("Set 01 Challenge 03: ");
 
     let input = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
-    let result = break_single_xor(input).0;
+    let result = String::from_utf8(
+        from_hex(input)
+            .unwrap()
+            .iter()
+            .map(|&b| b ^ break_single_xor(&from_hex(input).unwrap()))
+            .collect(),
+    )
+    .unwrap();
     let expected = "Cooking MC's like a pound of bacon";
 
     if result == expected {
@@ -47,22 +54,24 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
-fn calculate_freqs(input: &str) -> HashMap<u8, f32> {
-    let mut char_freq: HashMap<u8, f32> = HashMap::new();
+fn calculate_freqs(input: &[u8]) -> HashMap<u8, f32> {
+    let mut char_freqs: HashMap<u8, f32> = HashMap::new();
 
-    for byte in input.bytes() {
-        *char_freq.entry(byte).or_insert(0.0) += 1.0;
+    for byte in input {
+        *char_freqs.entry(*byte).or_insert(0.0) += 1.0;
     }
 
-    let len: f32 = char_freq.values().sum();
-    for cnt in char_freq.values_mut() {
-        *cnt /= len;
+    let len: f32 = char_freqs.values().sum();
+    for freq in char_freqs.values_mut() {
+        *freq /= len;
     }
 
-    char_freq
+    char_freqs
 }
 
-fn calculate_score(char_freqs: HashMap<u8, f32>) -> f32 {
+pub fn calculate_score(input: &[u8]) -> f32 {
+    let char_freqs = calculate_freqs(input);
+
     let mut score = 0.0;
 
     for (byte, cnt) in &char_freqs {
@@ -88,20 +97,14 @@ fn get_expected(byte: u8) -> Option<f32> {
     None
 }
 
-pub fn break_single_xor(input: &str) -> (String, f32) {
-    let mut results: Vec<(String, f32)> = Vec::new();
-    for i in 0..=255 {
-        let buffer: Vec<u8> = from_hex(input).unwrap().iter().map(|b| b ^ i).collect();
-        if let Ok(s) = String::from_utf8(buffer) {
-            let score = calculate_score(calculate_freqs(&s));
-            results.push((s, score));
-        }
+pub fn break_single_xor(input: &[u8]) -> u8 {
+    let mut scores: Vec<(u8, f32)> = Vec::new();
+
+    for key in 0..=255 {
+        let buffer: Vec<u8> = input.iter().map(|b| b ^ key).collect();
+        scores.push((key, calculate_score(&buffer)))
     }
 
-    if results.is_empty() {
-        return ("".to_string(), f32::MAX);
-    }
-
-    results.sort_by(|a: &(String, f32), b| a.1.partial_cmp(&b.1).unwrap());
-    results[0].clone()
+    scores.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+    scores[0].0
 }

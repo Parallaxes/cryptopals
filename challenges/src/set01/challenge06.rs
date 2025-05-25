@@ -1,15 +1,13 @@
-use serialize::string_from_vec;
+use serialize::{Serialize, string_from_vec};
 use std::fs;
-
-use super::challenge03::break_single_xor;
 
 static KEYSIZE: i32 = 40;
 
 pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     let input =
         fs::read_to_string("challenges/data/set01/challenge06.txt").expect("Failed to read file");
-    let candidates = find_candidates(input.clone());
-    println!("{}", break_rep_xor(input, candidates));
+    // let candidates = find_candidates(input.clone());
+    // println!("{}", break_rep_xor(input, candidates));
     Ok(())
 }
 
@@ -30,70 +28,131 @@ fn test_hamming() {
     }
 }
 
-fn find_candidates(input: String) -> (i32, i32, i32) {
-    let input_bytes: Vec<u8> = input
-        .bytes()
-        .filter(|&b| b != b'\n' && b != b'\r')
-        .collect();
-
-    let mut candidates: Vec<(i32, u32)> = Vec::new();
-
-    for i in 1..=KEYSIZE {
-        let i = i as usize;
-        if input_bytes.len() < 2 * i { continue; }
-        if let Some(dist) = hamming_distance(&input_bytes[0..i], &input_bytes[i..2*i]) {
-            candidates.push((i as i32, dist));
+fn normalize_hamming(input: &[u8], keysize: usize) -> f32 {
+    let chunks: Vec<&[u8]> = input.chunks(keysize).take(4).collect();
+    let mut distance = 0f32;
+    for i in 0..4 {
+        for j in i..4 {
+            if let Some(hamming) = hamming_distance(chunks[i], chunks[j]) {
+                distance += hamming as f32;
+            }
         }
     }
 
-    candidates.sort_by_key(|i| i.1);
-
-    if candidates.len() >= 3 {
-        (candidates[0].0, candidates[1].0, candidates[2].0)
-    } else {
-        (0, 0, 0)
-    }
+    distance / keysize as f32
 }
 
-fn break_rep_xor(input: String, candidates: (i32, i32, i32)) -> String {
-    let candidate_sizes = [candidates.0, candidates.1, candidates.2];
-    for i in 0..3 {
-        let keysize = candidate_sizes[i] as usize;
-        if keysize == 0 {
-            eprintln!("Skipping candidate with zero keysize");
-            continue;
-        }
+fn find_candidates(input: &[u8]) -> Vec<usize> {
+    let cnt = 3;
+    let mut dists: Vec<(usize, u32)> = (2..40)
+        .map(|keysize| {
+            (
+                keysize,
+                (100f32 * normalize_hamming(input, keysize)) as u32,
+            )
+        }).collect();
 
-        let mut blocks: Vec<Vec<u8>> = input
-            .as_bytes()
-            .chunks(keysize)
-            .map(|chunk| chunk.to_vec())
-            .collect();
-
-        transpose(&mut blocks);
-
-        for block in blocks {
-            println!("{:?}", break_single_xor(std::str::from_utf8(&block).unwrap())); // TODO: FIX
-        }
-    }
-    "Ok".to_string()
+    dists.sort_by(|&(_, s), &(_, t)| s.cmp(&t));
+    dists.iter().take(cnt).map(|x| x.0).collect()
 }
 
-fn transpose(blocks: &mut Vec<Vec<u8>>) {
-    if blocks.is_empty() || blocks[0].is_empty() {
-        return;
+fn transpose(input: &[u8], keysize: usize) -> Vec<Vec<u8>> {
+    let mut transposed: Vec<Vec<u8>> = vec![Vec::new(); keysize];
+    for (i, &byte) in input.iter().enumerate() {
+        transposed[i % keysize].push(byte);
     }
-
-    let num_blocks = blocks.len();
-    let block_size = blocks[0].len();
-
-    let mut transposed: Vec<Vec<u8>> = vec![Vec::with_capacity(num_blocks); block_size];
-
-    for block in blocks.iter() {
-        for (i, &byte) in block.iter().enumerate() {
-            transposed[i].push(byte);
-        }
-    }
-
-    *blocks = transposed;
+    transposed
 }
+
+// pub fn break_rep_xor_keysize(input: &mut [u8], keysize: usize) -> Vec<u8> {
+//     transpose(input, keysize)
+//         .iter()
+//         .map(|b| break_single_xor(b))
+//         .collect::<Vec<u8>>()
+// }
+
+// fn hamming_distance(b1: &[u8], b2: &[u8]) -> Option<u32> {
+//     if b1.len() != b2.len() {
+//         return None;
+//     }
+
+//     Some(b1.iter().zip(b2).map(|(x, y)| (x ^ y).count_ones()).sum())
+// }
+// pub fn break_rep_xor_keysize(input: &mut [u8], keysize: usize) -> Vec<Vec<u8>> {
+//     transpose(input, keysize)
+// }
+//     let b1 = "this is a test".as_bytes();
+//     let b2 = "wokka wokka!!!".as_bytes();
+//     if let Some(result) = hamming_distance(b1, b2) {
+//         assert_eq!(result, 37);
+//     }
+// }
+
+// fn find_candidates(input: String) -> (i32, i32, i32) {
+//     let input_bytes: Vec<u8> = input
+//         .bytes()
+//         .filter(|&b| b != b'\n' && b != b'\r')
+//         .collect();
+
+//     let mut candidates: Vec<(i32, u32)> = Vec::new();
+
+//     for i in 1..=KEYSIZE {
+//         let i = i as usize;
+//         if input_bytes.len() < 2 * i { continue; }
+//         if let Some(dist) = hamming_distance(&input_bytes[0..i], &input_bytes[i..2*i]) {
+//             candidates.push((i as i32, dist));
+//         }
+//     }
+
+//     candidates.sort_by_key(|i| i.1);
+
+//     if candidates.len() >= 3 {
+//         (candidates[0].0, candidates[1].0, candidates[2].0)
+//     } else {
+//         (0, 0, 0)
+//     }
+// }
+
+// fn break_rep_xor(input: String, candidates: (i32, i32, i32)) -> String {
+//     let candidate_sizes = [candidates.0, candidates.1, candidates.2];
+//     for i in 0..3 {
+//         let keysize = candidate_sizes[i] as usize;
+//         if keysize == 0 {
+//             eprintln!("Skipping candidate with zero keysize");
+//             continue;
+//         }
+
+//         let mut blocks: Vec<Vec<u8>> = input
+//             .as_bytes()
+//             .chunks(keysize)
+//             .map(|chunk| chunk.to_vec())
+//             .collect();
+
+//         transpose(&mut blocks);
+
+//         for block in blocks {
+//             //println!("{:?}", break_single_xor(std::str::from_utf8(&block).unwrap())); // TODO: FIX
+//             println!("{:?}", break_single_xor(String::from_utf8(block).unwrap().as_str().to_hex().as_str()));
+//         }
+//     }
+//     "Ok".to_string()
+// }
+
+// fn transpose(blocks: &mut Vec<Vec<u8>>) {
+//     if blocks.is_empty() || blocks[0].is_empty() {
+//         return;
+//     }
+
+//     let num_blocks = blocks.len();
+//     let block_size = blocks[0].len();
+
+//     let mut transposed: Vec<Vec<u8>> = vec![Vec::with_capacity(num_blocks); block_size];
+
+//     for block in blocks.iter() {
+//         for (i, &byte) in block.iter().enumerate() {
+//             transposed[i].push(byte);
+//         }
+//     }
+
+//     *blocks = transposed;
+// }
