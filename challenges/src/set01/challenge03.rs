@@ -70,8 +70,16 @@ fn calculate_freqs(input: &[u8]) -> HashMap<u8, f32> {
 }
 
 pub fn calculate_score(input: &[u8]) -> f32 {
-    let char_freqs = calculate_freqs(input);
+    if !input.is_ascii() {
+        return f32::MAX;
+    }
 
+    if input.iter().any(|&c| (c < 0x20 || c == 0x7F) && c != b'\n') {
+        return f32::MAX;
+    }
+
+    let char_freqs = calculate_freqs(input);
+    let len = char_freqs.len();
     let mut score = 0.0;
 
     for (byte, cnt) in &char_freqs {
@@ -80,7 +88,7 @@ pub fn calculate_score(input: &[u8]) -> f32 {
                 score += (expected - cnt).abs();
             }
         } else {
-            score += 100.0; // Penalize unrecognized chars
+            score += cnt * len as f32 * 100.0; // Penalize unrecognized chars
         }
     }
 

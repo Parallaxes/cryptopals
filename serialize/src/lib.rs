@@ -51,6 +51,10 @@ pub fn from_hex(input: &str) -> Option<Vec<u8>> {
     Some(bytes)
 }
 
+pub fn from_base64(input: &str) -> Vec<u8> {
+    general_purpose::STANDARD.decode(input).unwrap()
+}
+
 pub fn string_from_vec(input: Vec<u8>) -> String {
     let mut result = String::new();
     for elem in input {
