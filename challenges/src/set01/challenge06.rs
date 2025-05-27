@@ -1,12 +1,12 @@
 use serialize::from_base64;
-use xor::Xor;
 use std::fs;
+use xor::Xor;
 
 use super::challenge03::{break_single_xor, calculate_score};
 
 pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     print!("Set 01 Challenge 06: ");
-    
+
     let input = fs::read_to_string("challenges/data/set01/challenge06.txt")
         .expect("Failed to read file")
         .lines()
@@ -48,7 +48,7 @@ fn normalize_hamming(input: &[u8], keysize: usize) -> f32 {
     let chunks: Vec<&[u8]> = input.chunks(keysize).take(4).collect();
     let mut dist = 0f32;
     for i in 0..4 {
-        for j in i..4 { 
+        for j in i..4 {
             dist += hamming_distance(chunks[i], chunks[j]).unwrap() as f32;
         }
     }
@@ -58,14 +58,12 @@ fn normalize_hamming(input: &[u8], keysize: usize) -> f32 {
 
 fn find_keysizes(input: &[u8]) -> Vec<usize> {
     let mut dists: Vec<(usize, u32)> = (2..=40)
-        .map(|keysize| {
-            (keysize, (100f32 * normalize_hamming(input, keysize)) as u32)
-        }).collect();
-    
+        .map(|keysize| (keysize, (100f32 * normalize_hamming(input, keysize)) as u32))
+        .collect();
+
     dists.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
     dists.iter().take(3).map(|x| x.0).collect()
 }
-
 
 fn transpose(input: &[u8], keysize: usize) -> Vec<Vec<u8>> {
     let mut transposed: Vec<Vec<u8>> = (0..keysize).map(|_| Vec::new()).collect();

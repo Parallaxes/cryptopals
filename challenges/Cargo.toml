@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 serialize = { path = "../serialize" }
 xor = { path = "../xor" }
+aes = { path = "../aes" }

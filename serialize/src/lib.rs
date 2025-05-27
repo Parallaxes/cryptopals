@@ -39,7 +39,7 @@ impl Serialize for Vec<u8> {
 }
 
 pub fn from_hex(input: &str) -> Option<Vec<u8>> {
-    let mut bytes = Vec::with_capacity(input.len() / 2);
+    let mut bytes: Vec<u8> = Vec::with_capacity(input.len() / 2);
     for chunk in input.as_bytes().chunks(2) {
         if let Ok(byte_val) = u8::from_str_radix(std::str::from_utf8(chunk).unwrap(), 16) {
             bytes.push(byte_val);

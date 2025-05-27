@@ -22,7 +22,7 @@ fn main() {
             set01::challenge04::run().unwrap();
             set01::challenge05::run().unwrap();
             set01::challenge06::run().unwrap();
-        },
+        }
         _ => panic!(),
     }
 }

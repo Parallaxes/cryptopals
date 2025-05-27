@@ -4,7 +4,8 @@ use xor::Xor;
 pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     print!("Set 01 Challenge 05: ");
 
-    let input = b"Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal".to_vec();
+    let input =
+        b"Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal".to_vec();
     let key = b"ICE".to_vec();
 
     let result = String::from_utf8(Xor::rep_key_xor(&input, &key)).unwrap();
