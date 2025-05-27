@@ -13,7 +13,7 @@ fn main() {
         "4" => set01::challenge04::run().unwrap(),
         "5" => set01::challenge05::run().unwrap(),
         "6" => set01::challenge06::run().unwrap(),
-        // "7" => set01::challenge07::run().unwrap(),
+        "7" => set01::challenge07::run().unwrap(),
         // "8" => set01::challenge08::run().unwrap(),
         "0" => {
             set01::challenge02::run().unwrap();
