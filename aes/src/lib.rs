@@ -87,13 +87,18 @@ impl Aes128 for [u8] {
     }
 
     fn encrypt(&self, key: &Self, iv: Option<&Self>, mode: Mode) -> Result<Vec<u8>, &'static str> {
-        match Mode {
+        match mode {
             Mode::CBC => {
                 unimplemented!()
             },
 
             Mode::ECB => {
-                encrypt_aes128_ecb(&self, key)
+                // encrypt_aes128_ecb(&self, key)
+                unimplemented!()
+            }
+
+            Mode::GCM => {
+                unimplemented!()
             }
         }
     }
@@ -105,12 +110,42 @@ impl Aes128 for [u8] {
 
 fn encrypt_aes128_block(data: &[u8], key: &[u8]) -> Result<Vec<u8>, &'static str> {
     if data.len() != BLOCK_SIZE {
-        Err("Invalid block size")
+        return Err("Invalid block size");
     }
 
-    Ok(vec![])
+    let data = pkcs7_pad(data);
+    Ok(openssl::symm::encrypt(Cipher::aes_128_ecb(), key, None, &data).unwrap())
 }
 
+fn pkcs7_pad(input: &[u8]) -> Vec<u8> {
+    assert!(BLOCK_SIZE <= 255 && BLOCK_SIZE > 0);
+
+    let padding_len = BLOCK_SIZE - (input.len() % BLOCK_SIZE);
+    let mut padded = Vec::with_capacity(input.len() + padding_len);
+    padded.extend(input);
+    padded.extend(std::iter::repeat(padding_len as u8).take(padding_len));
+
+    padded
+}
+
+fn pkcs_unpad(input: &[u8]) -> Result<Vec<u8>, &'static str> {
+    if input.is_empty() {
+        return Err("Input is empty");
+    }
+
+    let pad_len = *input.last().unwrap() as usize;
+    if pad_len == 0 || pad_len > input.len() {
+        return Err("Invalid padding length");
+    }
+
+    if !input[input.len() - pad_len..].iter().all(|&b| b as usize == pad_len) {
+        return Err("Invalid PKCS#7 padding bytes");
+    }
+
+    Ok(input[..input.len() - pad_len].to_vec())
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -120,7 +155,7 @@ mod tests {
         let data: &[u8] = b"meow meow kitty";
 
         let expected = from_hex("49652E164AD1BEB085D7F3E339598CA6").unwrap();
-        let result = data.encrypt(key, None, "ECB");
+        let result = data.encrypt(key, None, Mode::ECB).unwrap();
 
         assert_eq!(expected, result);
     }
@@ -132,9 +167,16 @@ mod tests {
         let data: &[u8] = data_vec.as_ref();
 
         let expected: &[u8] = b"meow meow kitty";
-        let result = data.decrypt(key, None, "ECB");
+        let result = data.decrypt(key, None, Mode::ECB).unwrap();
 
         assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn test_pkcs7_padding() {
+        let data = b"meow meow kitty";
+        let padded = pkcs7_pad(data);
+        println!("Padded: {:?}", padded);
     }
 }
 
