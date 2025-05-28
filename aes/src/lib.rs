@@ -1,66 +1,4 @@
-use openssl::symm::{decrypt, encrypt, Cipher};
-use serialize::{from_hex, Serialize};
-use std::{error::Error, mem::uninitialized};
-
-// pub trait Encrypt {
-//     fn aes_128_ecb(&self, key: &[u8]) -> Vec<u8>;
-// }
-
-// impl Encrypt for [u8] {
-//     fn aes_128_ecb(&self, key: &[u8]) -> Vec<u8> {
-//         encrypt(Cipher::aes_128_ecb(), key, None, self).expect("AES 128 ECB encryption failed")
-//     }
-// }
-
-// pub trait Decrypt {
-//     fn aes_128_ecb(&self, key: &[u8]) -> Vec<u8>;
-// }
-
-// pub trait Decrypt {
-//     fn aes_128_ecb(key: &[u8], data: &[u8]) -> Vec<u8> {
-
-//     }
-// }
-
-// pub trait Encrypt {
-//     fn encrypt(&self, key: &[u8], iv: Option<&[u8]>, mode: &str) -> Vec<u8>;
-// }
-
-// pub trait Decrypt {
-//     fn decrypt(&self, key: &[u8], iv: Option<&[u8]>, mode: &str) -> Vec<u8>;
-// }
-
-// impl Encrypt for &[u8] {
-//     fn encrypt(&self, key: &[u8], iv: Option<&[u8]>, mode: &str) -> Vec<u8> {
-//         match mode {
-//             "CBC" => {
-//                 unimplemented!()
-//             },
-
-//             "ECB" => {
-//                 encrypt(Cipher::aes_128_ecb(), key, None, self).expect("AES 128 ECB failed!")
-//             },
-
-//             _ => todo!()
-//         }
-//     }
-// }
-
-// impl Decrypt for &[u8] {
-//     fn decrypt(&self, key: &[u8], iv: Option<&[u8]>, mode: &str) -> Vec<u8> {
-//         match mode {
-//             "CBC" => {
-//                 unimplemented!()
-//             },
-
-//             "ECB" => {
-//                 decrypt(Cipher::aes_128_ecb(), key, None, self).expect("AES Decryption failed!")
-//             },
-
-//             _ => todo!()
-//         }
-//     }
-// }
+use openssl::symm::Cipher;
 
 static BLOCK_SIZE: usize = 16;
 
@@ -73,9 +11,11 @@ pub enum Mode {
 pub trait Aes128 {
     fn pad(&self) -> Vec<u8>;
     fn padding_valid(&self) -> bool;
-    fn encrypt(&self, key: &Self, iv: Option<&Self>, mode: Mode) -> Result<Vec<u8>, &'static str>;
+    fn encrypt(&self, key: &[u8], iv: Option<&Self>, mode: Mode) -> Result<Vec<u8>, &'static str>;
     fn decrypt(&self, key: &Self, iv: Option<&Self>, mode: Mode) -> Result<Vec<u8>, &'static str>;
 }
+
+
 
 impl Aes128 for [u8] {
     fn pad(&self) -> Vec<u8> {
@@ -86,15 +26,14 @@ impl Aes128 for [u8] {
         unimplemented!()
     }
 
-    fn encrypt(&self, key: &Self, iv: Option<&Self>, mode: Mode) -> Result<Vec<u8>, &'static str> {
+    fn encrypt(&self, key: &[u8], iv: Option<&Self>, mode: Mode) -> Result<Vec<u8>, &'static str> {
         match mode {
             Mode::CBC => {
                 unimplemented!()
             },
 
             Mode::ECB => {
-                // encrypt_aes128_ecb(&self, key)
-                unimplemented!()
+                self.encrypt_aes128_ecb(key)
             }
 
             Mode::GCM => {
@@ -108,14 +47,22 @@ impl Aes128 for [u8] {
     }
 }
 
-fn encrypt_aes128_block(data: &[u8], key: &[u8]) -> Result<Vec<u8>, &'static str> {
-    if data.len() != BLOCK_SIZE {
-        return Err("Invalid block size");
-    }
+pub trait Aes128Encrypt {
+    fn encrypt_aes128_ecb(&self, key: &[u8]) -> Result<Vec<u8>, &'static str>;
+}
 
+impl Aes128Encrypt for &[u8] {
+    fn encrypt_aes128_ecb(&self, key: &[u8]) -> Result<Vec<u8>, &'static str> {
+        encrypt_aes128_block(&pkcs7_pad(self), key)
+    }
+}
+
+fn encrypt_aes128_block(data: &[u8], key: &[u8]) -> Result<Vec<u8>, &'static str> {
     let data = pkcs7_pad(data);
     Ok(openssl::symm::encrypt(Cipher::aes_128_ecb(), key, None, &data).unwrap())
 }
+
+
 
 fn pkcs7_pad(input: &[u8]) -> Vec<u8> {
     assert!(BLOCK_SIZE <= 255 && BLOCK_SIZE > 0);
@@ -128,7 +75,7 @@ fn pkcs7_pad(input: &[u8]) -> Vec<u8> {
     padded
 }
 
-fn pkcs_unpad(input: &[u8]) -> Result<Vec<u8>, &'static str> {
+fn pkcs7_unpad(input: &[u8]) -> Result<Vec<u8>, &'static str> {
     if input.is_empty() {
         return Err("Input is empty");
     }
@@ -148,6 +95,7 @@ fn pkcs_unpad(input: &[u8]) -> Result<Vec<u8>, &'static str> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serialize::from_hex;
 
     #[test]
     fn test_aes_128_ecb_encrypt() {
@@ -173,10 +121,34 @@ mod tests {
     }
 
     #[test]
-    fn test_pkcs7_padding() {
-        let data = b"meow meow kitty";
+    fn test_pkcs7_pad_exact() {
+        let data = b"1234567890ABCDEF"; // 16 bytes
         let padded = pkcs7_pad(data);
-        println!("Padded: {:?}", padded);
+
+        assert_eq!(padded.len(), 32);
+        assert_eq!(&padded[16..], &[16u8; 16]); // full block padding
+    }
+
+    #[test]
+    fn test_pkcs7_pad_partial() {
+        let data = b"hello";
+        let padded = pkcs7_pad(data);
+
+        assert_eq!(padded.len(), 16);
+        assert_eq!(&padded[0..5], b"hello");
+        assert_eq!(&padded[5..], &[11u8; 11]);
+    }
+
+    #[test]
+    fn test_pkcs7_unpad_invalid_len() {
+        let bad = b"ac\x00";
+        assert!(pkcs7_unpad(bad).is_err());
+    }
+
+    #[test]
+    fn test_pkcs7_unpad_empty() {
+        let empty = b"";
+        assert!(pkcs7_unpad(empty).is_err());
     }
 }
 
