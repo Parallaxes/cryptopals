@@ -1,7 +1,5 @@
 use openssl::symm::Cipher;
 
-static BLOCK_SIZE: usize = 16;
-
 pub enum Mode {
     CBC,
     ECB,
@@ -80,10 +78,10 @@ fn decrypt_aes128_block(data: &[u8], key: &[u8]) -> Result<Vec<u8>, &'static str
     Ok(openssl::symm::decrypt(Cipher::aes_128_ecb(), key, None, data).unwrap())
 }
 
-pub fn pkcs7_pad(input: &[u8]) -> Vec<u8> {
-    assert!(BLOCK_SIZE <= 255 && BLOCK_SIZE > 0);
+pub fn pkcs7_pad(input: &[u8], block_size: usize) -> Vec<u8> {
+    assert!(block_size <= 255 && block_size > 0);
 
-    let padding_len = BLOCK_SIZE - (input.len() % BLOCK_SIZE);
+    let padding_len = block_size - (input.len() % block_size);
     let mut padded = Vec::with_capacity(input.len() + padding_len);
     padded.extend(input);
     padded.extend(std::iter::repeat(padding_len as u8).take(padding_len));
@@ -141,7 +139,7 @@ mod tests {
     #[test]
     fn test_pkcs7_pad_exact() {
         let data = b"1234567890ABCDEF"; // 16 bytes
-        let padded = pkcs7_pad(data);
+        let padded = pkcs7_pad(data, 16);
 
         assert_eq!(padded.len(), 32);
         assert_eq!(&padded[16..], &[16u8; 16]); // full block padding
@@ -150,7 +148,7 @@ mod tests {
     #[test]
     fn test_pkcs7_pad_partial() {
         let data = b"hello";
-        let padded = pkcs7_pad(data);
+        let padded = pkcs7_pad(data, 16);
 
         assert_eq!(padded.len(), 16);
         assert_eq!(&padded[0..5], b"hello");
