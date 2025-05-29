@@ -55,6 +55,17 @@ pub fn from_base64(input: &str) -> Vec<u8> {
     general_purpose::STANDARD.decode(input).unwrap()
 }
 
+use std::fs;
+
+pub fn from_base64_file(path: &str) -> Vec<u8> {
+    from_base64(
+        &fs::read_to_string(path)
+            .expect("Failed to read file")
+            .lines()
+            .collect::<String>(),
+    )
+}
+
 pub fn string_from_vec(input: Vec<u8>) -> String {
     let mut result = String::new();
     for elem in input {

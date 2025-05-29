@@ -15,8 +15,6 @@ pub trait Aes128 {
     fn decrypt(&self, key: &Self, iv: Option<&Self>, mode: Mode) -> Result<Vec<u8>, &'static str>;
 }
 
-
-
 impl Aes128 for [u8] {
     fn pad(&self) -> Vec<u8> {
         unimplemented!()
@@ -30,11 +28,9 @@ impl Aes128 for [u8] {
         match mode {
             Mode::CBC => {
                 unimplemented!()
-            },
-
-            Mode::ECB => {
-                self.encrypt_aes128_ecb(key)
             }
+
+            Mode::ECB => self.encrypt_aes128_ecb(key),
 
             Mode::GCM => {
                 unimplemented!()
@@ -43,28 +39,48 @@ impl Aes128 for [u8] {
     }
 
     fn decrypt(&self, key: &Self, iv: Option<&Self>, mode: Mode) -> Result<Vec<u8>, &'static str> {
-        unimplemented!()
+        match mode {
+            Mode::CBC => {
+                unimplemented!()
+            }
+
+            Mode::ECB => self.decrypt_aes128_ecb(key),
+
+            Mode::GCM => {
+                unimplemented!()
+            }
+        }
     }
 }
 
 pub trait Aes128Encrypt {
     fn encrypt_aes128_ecb(&self, key: &[u8]) -> Result<Vec<u8>, &'static str>;
+    fn decrypt_aes128_ecb(&self, key: &[u8]) -> Result<Vec<u8>, &'static str>;
 }
 
 impl Aes128Encrypt for &[u8] {
     fn encrypt_aes128_ecb(&self, key: &[u8]) -> Result<Vec<u8>, &'static str> {
-        encrypt_aes128_block(&pkcs7_pad(self), key)
+        encrypt_aes128_block(&self, key)
+    }
+
+    fn decrypt_aes128_ecb(&self, key: &[u8]) -> Result<Vec<u8>, &'static str> {
+        decrypt_aes128_block(&self, key)
     }
 }
 
 fn encrypt_aes128_block(data: &[u8], key: &[u8]) -> Result<Vec<u8>, &'static str> {
-    let data = pkcs7_pad(data);
-    Ok(openssl::symm::encrypt(Cipher::aes_128_ecb(), key, None, &data).unwrap())
+    Ok(openssl::symm::encrypt(Cipher::aes_128_ecb(), key, None, data).unwrap())
 }
 
+fn decrypt_aes128_block(data: &[u8], key: &[u8]) -> Result<Vec<u8>, &'static str> {
+    if data.len() % 16 != 0 {
+        return Err("Ciphertext length must be a multiple of 16 bytes");
+    }
 
+    Ok(openssl::symm::decrypt(Cipher::aes_128_ecb(), key, None, data).unwrap())
+}
 
-fn pkcs7_pad(input: &[u8]) -> Vec<u8> {
+pub fn pkcs7_pad(input: &[u8]) -> Vec<u8> {
     assert!(BLOCK_SIZE <= 255 && BLOCK_SIZE > 0);
 
     let padding_len = BLOCK_SIZE - (input.len() % BLOCK_SIZE);
@@ -85,7 +101,10 @@ fn pkcs7_unpad(input: &[u8]) -> Result<Vec<u8>, &'static str> {
         return Err("Invalid padding length");
     }
 
-    if !input[input.len() - pad_len..].iter().all(|&b| b as usize == pad_len) {
+    if !input[input.len() - pad_len..]
+        .iter()
+        .all(|&b| b as usize == pad_len)
+    {
         return Err("Invalid PKCS#7 padding bytes");
     }
 
@@ -104,7 +123,6 @@ mod tests {
 
         let expected = from_hex("49652E164AD1BEB085D7F3E339598CA6").unwrap();
         let result = data.encrypt(key, None, Mode::ECB).unwrap();
-
         assert_eq!(expected, result);
     }
 
@@ -151,4 +169,3 @@ mod tests {
         assert!(pkcs7_unpad(empty).is_err());
     }
 }
-
