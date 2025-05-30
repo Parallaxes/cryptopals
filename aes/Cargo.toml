@@ -7,3 +7,4 @@ edition = "2021"
 openssl = "0.10.72"
 
 serialize = { path = "../serialize" }
+xor = { path = "../xor" }

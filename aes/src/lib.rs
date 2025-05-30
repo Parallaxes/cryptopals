@@ -1,4 +1,7 @@
-use openssl::symm::Cipher;
+use openssl::{cipher, symm::Cipher};
+use xor::Xor;
+
+static BLOCK_SIZE: usize = 64;
 
 pub enum Mode {
     CBC,
@@ -24,9 +27,7 @@ impl Aes128 for [u8] {
 
     fn encrypt(&self, key: &[u8], iv: Option<&Self>, mode: Mode) -> Result<Vec<u8>, &'static str> {
         match mode {
-            Mode::CBC => {
-                unimplemented!()
-            }
+            Mode::CBC => self.encrypt_aes128_cbc(key, iv),
 
             Mode::ECB => self.encrypt_aes128_ecb(key),
 
@@ -38,9 +39,7 @@ impl Aes128 for [u8] {
 
     fn decrypt(&self, key: &Self, iv: Option<&Self>, mode: Mode) -> Result<Vec<u8>, &'static str> {
         match mode {
-            Mode::CBC => {
-                unimplemented!()
-            }
+            Mode::CBC => unimplemented!(),
 
             Mode::ECB => self.decrypt_aes128_ecb(key),
 
@@ -51,31 +50,62 @@ impl Aes128 for [u8] {
     }
 }
 
-pub trait Aes128Encrypt {
+pub trait Aes128Suite {
     fn encrypt_aes128_ecb(&self, key: &[u8]) -> Result<Vec<u8>, &'static str>;
     fn decrypt_aes128_ecb(&self, key: &[u8]) -> Result<Vec<u8>, &'static str>;
+    fn encrypt_aes128_cbc(&self, key: &[u8], iv: Option<&[u8]>) -> Result<Vec<u8>, &'static str>;
 }
 
-impl Aes128Encrypt for &[u8] {
+impl Aes128Suite for &[u8] {
     fn encrypt_aes128_ecb(&self, key: &[u8]) -> Result<Vec<u8>, &'static str> {
-        encrypt_aes128_block(&self, key)
+        encrypt_aes128_block_ecb(&self, key)
     }
 
     fn decrypt_aes128_ecb(&self, key: &[u8]) -> Result<Vec<u8>, &'static str> {
-        decrypt_aes128_block(&self, key)
+        decrypt_aes128_block_ecb(&self, key)
+    }
+
+    fn encrypt_aes128_cbc(&self, key: &[u8], iv: Option<&[u8]>) -> Result<Vec<u8>, &'static str> {
+        encrypt_aes128_block_ecb(&self, key)
     }
 }
 
-fn encrypt_aes128_block(data: &[u8], key: &[u8]) -> Result<Vec<u8>, &'static str> {
+fn encrypt_aes128_block_ecb(data: &[u8], key: &[u8]) -> Result<Vec<u8>, &'static str> {
     Ok(openssl::symm::encrypt(Cipher::aes_128_ecb(), key, None, data).unwrap())
 }
 
-fn decrypt_aes128_block(data: &[u8], key: &[u8]) -> Result<Vec<u8>, &'static str> {
+fn decrypt_aes128_block_ecb(data: &[u8], key: &[u8]) -> Result<Vec<u8>, &'static str> {
     if data.len() % 16 != 0 {
         return Err("Ciphertext length must be a multiple of 16 bytes");
     }
 
     Ok(openssl::symm::decrypt(Cipher::aes_128_ecb(), key, None, data).unwrap())
+}
+
+fn encrypt_aes128_block_cbc(data: &[u8], key: &[u8], iv: Option<&[u8]>) -> Result<Vec<u8>, &'static str> {
+    let mut result: Vec<u8> = Vec::new();
+
+    let iv = iv.unwrap_or(&[0u8; 16]);
+
+    let mut chunks = data.chunks(BLOCK_SIZE);
+    let init_chunk = chunks.next().ok_or("No data provided")?;
+
+    let mut prev_cipher = init_chunk.fixed_xor(iv)
+        .encrypt(key, None, Mode::ECB)
+        .map_err(|_| "Failed to encrypt IV")?;
+    
+    result.extend_from_slice(&prev_cipher);
+    
+
+    for chunk in chunks {
+        let block = chunk.fixed_xor(&prev_cipher)
+            .encrypt(key, None, Mode::ECB)
+            .map_err(|_| "Failed to encrypt block")?;
+        result.extend_from_slice(&block);
+        prev_cipher = block;
+    }
+
+    Ok(result)
 }
 
 pub fn pkcs7_pad(input: &[u8], block_size: usize) -> Vec<u8> {
@@ -134,6 +164,16 @@ mod tests {
         let result = data.decrypt(key, None, Mode::ECB).unwrap();
 
         assert_eq!(expected, result);
+    }
+
+    #[test]
+    fn test_aes_128_cbc_encrypt() {
+        let key = b"YELLOW SUBMARINE";
+        let data = b"meow meow kitty";
+
+        let result = data.encrypt(key, Some(&[0u8; 16]), Mode::CBC);
+        println!("{:?}", result);
+        println!("{:?}", from_hex("26F3DAB4420BBDE3B97F74B6ADC8C00B"))
     }
 
     #[test]
