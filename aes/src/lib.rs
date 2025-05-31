@@ -1,4 +1,5 @@
-use openssl::{cipher, symm::Cipher};
+use openssl::symm::Cipher;
+use serialize::Serialize;
 use xor::Xor;
 
 static BLOCK_SIZE: usize = 64;
@@ -54,6 +55,7 @@ pub trait Aes128Suite {
     fn encrypt_aes128_ecb(&self, key: &[u8]) -> Result<Vec<u8>, &'static str>;
     fn decrypt_aes128_ecb(&self, key: &[u8]) -> Result<Vec<u8>, &'static str>;
     fn encrypt_aes128_cbc(&self, key: &[u8], iv: Option<&[u8]>) -> Result<Vec<u8>, &'static str>;
+    fn decrypt_aes128_cbc(&self, key: &[u8], iv: Option<&[u8]>) -> Result<Vec<u8>, &'static str>;
 }
 
 impl Aes128Suite for &[u8] {
@@ -66,7 +68,12 @@ impl Aes128Suite for &[u8] {
     }
 
     fn encrypt_aes128_cbc(&self, key: &[u8], iv: Option<&[u8]>) -> Result<Vec<u8>, &'static str> {
-        encrypt_aes128_block_ecb(&self, key)
+        encrypt_aes128_block_cbc(&self, key, iv)
+    }
+
+    fn decrypt_aes128_cbc(&self, key: &[u8], iv: Option<&[u8]>) -> Result<Vec<u8>, &'static str> {
+        // decrypt_aes128_block_cbc(&self, key, iv)
+        unimplemented!()
     }
 }
 
@@ -82,23 +89,21 @@ fn decrypt_aes128_block_ecb(data: &[u8], key: &[u8]) -> Result<Vec<u8>, &'static
     Ok(openssl::symm::decrypt(Cipher::aes_128_ecb(), key, None, data).unwrap())
 }
 
-fn encrypt_aes128_block_cbc(data: &[u8], key: &[u8], iv: Option<&[u8]>) -> Result<Vec<u8>, &'static str> {
+fn encrypt_aes128_block_cbc(
+    data: &[u8],
+    key: &[u8],
+    iv: Option<&[u8]>,
+) -> Result<Vec<u8>, &'static str> {
     let mut result: Vec<u8> = Vec::new();
 
     let iv = iv.unwrap_or(&[0u8; 16]);
 
-    let mut chunks = data.chunks(BLOCK_SIZE);
-    let init_chunk = chunks.next().ok_or("No data provided")?;
-
-    let mut prev_cipher = init_chunk.fixed_xor(iv)
-        .encrypt(key, None, Mode::ECB)
-        .map_err(|_| "Failed to encrypt IV")?;
-    
-    result.extend_from_slice(&prev_cipher);
-    
+    let chunks = data.chunks(BLOCK_SIZE);
+    let mut prev_cipher = iv.to_vec();
 
     for chunk in chunks {
-        let block = chunk.fixed_xor(&prev_cipher)
+        let block = chunk
+            .fixed_xor(&prev_cipher)
             .encrypt(key, None, Mode::ECB)
             .map_err(|_| "Failed to encrypt block")?;
         result.extend_from_slice(&block);
@@ -168,12 +173,12 @@ mod tests {
 
     #[test]
     fn test_aes_128_cbc_encrypt() {
+        let data = b"KATS ARE AMAZING";
         let key = b"YELLOW SUBMARINE";
-        let data = b"meow meow kitty";
+        let iv = b"0000000000000000";
 
-        let result = data.encrypt(key, Some(&[0u8; 16]), Mode::CBC);
-        println!("{:?}", result);
-        println!("{:?}", from_hex("26F3DAB4420BBDE3B97F74B6ADC8C00B"))
+        let result = data.encrypt(key, Some(iv), Mode::CBC).unwrap();
+        println!("{:?}", result.to_hex());
     }
 
     #[test]

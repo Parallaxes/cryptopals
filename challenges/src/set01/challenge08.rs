@@ -30,7 +30,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 // ECB is determinstic, so the same 16 byte plaintext block will produce the same 16 byte ciphertext block.
-// Thus, for each block we deserialize the hex data and place each 17 byte block into a HashSet. If the insertion 
+// Thus, for each block we deserialize the hex data and place each 17 byte block into a HashSet. If the insertion
 // action fails, we know that there is a duplicate and that block is the duplicate (ECB).
 fn detect_ecb(input: String) -> Vec<u8> {
     for line in input.lines() {
