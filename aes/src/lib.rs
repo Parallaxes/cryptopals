@@ -2,6 +2,8 @@ use openssl::symm::Cipher;
 use serialize::Serialize;
 use xor::Xor;
 
+mod aes;
+
 static BLOCK_SIZE: usize = 64;
 
 pub enum Mode {
