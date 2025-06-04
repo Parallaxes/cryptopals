@@ -9,9 +9,11 @@ pub enum Mode {
     GCM,
 }
 
+#[derive(Debug)]
 pub enum Aes128Error {
     EncryptionFailed,
     CrypterInitFailed,
+    DecryptionFailed,
 }
 
 pub trait Aes128 {
@@ -59,7 +61,9 @@ impl Aes128Suite for &[u8] {
             SymmMode::Encrypt,
             key,
             None
-        ).unwrap();
+        ).map_err(|_| Aes128Error::CrypterInitFailed)?;
+
+        encrypter.pad(false);
 
         let block_size = Cipher::aes_128_ecb().block_size();
         let mut ciphertext = vec![0; self.len() + block_size];
@@ -70,7 +74,47 @@ impl Aes128Suite for &[u8] {
     }
 
     fn decrypt_aes128_ecb(&self, key: &[u8]) -> Result<Vec<u8>, Aes128Error> {
-        openssl::symm::decrypt(Cipher::aes_128_ecb(), key, None, &self)
-            .map_err(|_| Aes128Error::EncryptionFailed)
+        let mut decrypter = Crypter::new(
+            Cipher::aes_128_ecb(),
+            SymmMode::Decrypt,
+            key,
+            None
+        ).map_err(|_| Aes128Error::CrypterInitFailed)?;
+
+        decrypter.pad(false);
+
+        let block_size = Cipher::aes_128_ecb().block_size();
+        let mut plaintext = vec![0; self.len() + block_size];
+        let mut count = decrypter.update(self, &mut plaintext).map_err(|_| Aes128Error::DecryptionFailed)?;
+        count += decrypter.finalize(&mut plaintext[count..]).map_err(|_| Aes128Error::DecryptionFailed)?;
+        plaintext.truncate(count);
+        Ok(plaintext)
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serialize::{Serialize, from_hex};
+
+    #[test]
+    fn test_encrypt_aes128_ecb_nopad() {
+        let input = b"this is 16 bytes";
+        let key = b"YELLOW SUBMARINE";
+        let result = input.encrypt(key, None, Mode::ECB).unwrap().to_hex();
+        let expected = "b8081bde98d086a0dc12220c838cf653";
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_decrypt_aes128_ecb_nopad() {
+        let input = from_hex("b8081bde98d086a0dc12220c838cf653").unwrap();
+        let key = b"YELLOW SUBMARINE";
+        let result = &input.decrypt(key, None, Mode::ECB).unwrap();
+        let expected = b"this is 16 bytes";
+
+        assert_eq!(result, expected);
     }
 }
