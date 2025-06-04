@@ -14,7 +14,7 @@ impl Serialize for &str {
     }
 
     fn to_base64(self) -> Option<String> {
-        Some(general_purpose::STANDARD.encode(&self))
+        Some(general_purpose::STANDARD.encode(self))
     }
 }
 
@@ -24,7 +24,7 @@ impl Serialize for &[u8] {
     }
 
     fn to_base64(self) -> Option<String> {
-        Some(general_purpose::STANDARD.encode(&self))
+        Some(general_purpose::STANDARD.encode(self))
     }
 }
 

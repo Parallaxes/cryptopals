@@ -27,8 +27,8 @@ pub trait Aes128 {
 
 impl Aes128 for [u8] {
     fn pad(&self, block_size: usize) -> Vec<u8> {
-        let padding_len = block_size - (&self.len() % block_size);
-        let mut padded = Vec::with_capacity(&self.len() + padding_len);
+        let padding_len = block_size - (self.len() % block_size);
+        let mut padded = Vec::with_capacity(self.len() + padding_len);
         padded.extend(self);
         padded.extend(std::iter::repeat(padding_len as u8).take(padding_len));
 
@@ -85,37 +85,37 @@ pub trait Aes128Suite {
 
 impl Aes128Suite for &[u8] {
     fn encrypt_aes128_ecb(&self, key: &[u8]) -> Result<Vec<u8>, Aes128Error> {
-        let mut encrypter = Crypter::new(
-            Cipher::aes_128_ecb(),
-            SymmMode::Encrypt,
-            key,
-            None
-        ).map_err(|_| Aes128Error::CrypterInitFailed)?;
+        let mut encrypter = Crypter::new(Cipher::aes_128_ecb(), SymmMode::Encrypt, key, None)
+            .map_err(|_| Aes128Error::CrypterInitFailed)?;
 
         encrypter.pad(false);
 
         let block_size = Cipher::aes_128_ecb().block_size();
         let mut ciphertext = vec![0; self.len() + block_size];
-        let mut count = encrypter.update(self, &mut ciphertext).map_err(|_| Aes128Error::EncryptionFailed)?;
-        count += encrypter.finalize(&mut ciphertext[count..]).map_err(|_| Aes128Error::EncryptionFailed)?;
+        let mut count = encrypter
+            .update(self, &mut ciphertext)
+            .map_err(|_| Aes128Error::EncryptionFailed)?;
+        count += encrypter
+            .finalize(&mut ciphertext[count..])
+            .map_err(|_| Aes128Error::EncryptionFailed)?;
         ciphertext.truncate(count);
         Ok(ciphertext)
     }
 
     fn decrypt_aes128_ecb(&self, key: &[u8]) -> Result<Vec<u8>, Aes128Error> {
-        let mut decrypter = Crypter::new(
-            Cipher::aes_128_ecb(),
-            SymmMode::Decrypt,
-            key,
-            None
-        ).map_err(|_| Aes128Error::CrypterInitFailed)?;
+        let mut decrypter = Crypter::new(Cipher::aes_128_ecb(), SymmMode::Decrypt, key, None)
+            .map_err(|_| Aes128Error::CrypterInitFailed)?;
 
         decrypter.pad(false);
 
         let block_size = Cipher::aes_128_ecb().block_size();
         let mut plaintext = vec![0; self.len() + block_size];
-        let mut count = decrypter.update(self, &mut plaintext).map_err(|_| Aes128Error::DecryptionFailed)?;
-        count += decrypter.finalize(&mut plaintext[count..]).map_err(|_| Aes128Error::DecryptionFailed)?;
+        let mut count = decrypter
+            .update(self, &mut plaintext)
+            .map_err(|_| Aes128Error::DecryptionFailed)?;
+        count += decrypter
+            .finalize(&mut plaintext[count..])
+            .map_err(|_| Aes128Error::DecryptionFailed)?;
         plaintext.truncate(count);
         Ok(plaintext)
     }
@@ -145,7 +145,7 @@ impl Aes128Suite for &[u8] {
         let mut prev_cipher = iv.to_vec();
 
         let chunks = self.chunks(BLOCK_SIZE);
-        
+
         for chunk in chunks {
             let block = chunk
                 .decrypt(key, None, Mode::ECB)
@@ -159,11 +159,10 @@ impl Aes128Suite for &[u8] {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serialize::{Serialize, from_hex};
+    use serialize::{from_hex, Serialize};
 
     #[test]
     fn test_pkcs7_pad_exact() {
