@@ -61,7 +61,7 @@ impl Aes128 for [u8] {
 
     fn encrypt(&self, key: &[u8], iv: Option<&Self>, mode: Mode) -> Result<Vec<u8>, Aes128Error> {
         match mode {
-            Mode::CBC => unimplemented!(), // self.encrypt_aes128_cbc(key, iv),
+            Mode::CBC => self.encrypt_aes128_cbc(key, iv), // self.encrypt_aes128_cbc(key, iv),
             Mode::ECB => self.encrypt_aes128_ecb(key),
             Mode::GCM => unimplemented!(),
         }
@@ -79,6 +79,7 @@ impl Aes128 for [u8] {
 pub trait Aes128Suite {
     fn encrypt_aes128_ecb(&self, key: &[u8]) -> Result<Vec<u8>, Aes128Error>;
     fn decrypt_aes128_ecb(&self, key: &[u8]) -> Result<Vec<u8>, Aes128Error>;
+    fn encrypt_aes128_cbc(&self, key: &[u8], iv: Option<&[u8]>) -> Result<Vec<u8>, Aes128Error>;
 }
 
 impl Aes128Suite for &[u8] {
@@ -116,6 +117,25 @@ impl Aes128Suite for &[u8] {
         count += decrypter.finalize(&mut plaintext[count..]).map_err(|_| Aes128Error::DecryptionFailed)?;
         plaintext.truncate(count);
         Ok(plaintext)
+    }
+
+    fn encrypt_aes128_cbc(&self, key: &[u8], iv: Option<&[u8]>) -> Result<Vec<u8>, Aes128Error> {
+        let mut result: Vec<u8> = Vec::new();
+        let iv = iv.unwrap_or(&[0u8; 16]);
+
+        let chunks = self.chunks(BLOCK_SIZE);
+        let mut prev_cipher = iv.to_vec();
+
+        for chunk in chunks {
+            let block = chunk
+                .fixed_xor(&prev_cipher)
+                .encrypt(key, None, Mode::ECB)
+                .map_err(|_| Aes128Error::EncryptionFailed)?;
+            result.extend_from_slice(&block);
+            prev_cipher = block;
+        }
+
+        Ok(result)
     }
 }
 
@@ -174,6 +194,17 @@ mod tests {
         let key = b"YELLOW SUBMARINE";
         let result = &input.decrypt(key, None, Mode::ECB).unwrap();
         let expected = b"this is 16 bytes";
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_encrypt_aes128_cbc_nopad() {
+        let input = b"this is 16 bytes";
+        let key = b"YELLOW SUBMARINE";
+        let iv = b"1111111111111111";
+        let result = &input.encrypt(key, Some(iv), Mode::CBC).unwrap().to_hex();
+        let expected = "6ba441c872d89c1e8c5dfdc0a2b3f9d1";
 
         assert_eq!(result, expected);
     }
