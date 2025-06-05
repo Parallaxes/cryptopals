@@ -32,6 +32,7 @@ fn main() {
         "2" => match challenge.as_str() {
             "9" => set02::challenge09::run().unwrap(),
             "10" => set02::challenge10::run().unwrap(),
+            "11" => set02::challenge11::run().unwrap(),
             _ => panic!(),
         },
         _ => panic!(),
