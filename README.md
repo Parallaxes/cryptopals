@@ -1,18 +1,18 @@
 # Matasano Cryptopals Crypto Challenges
 
 ## Set 1: Basics
-- [ X ] Challenge 1 - Convert hex to base64
-- [ X ] Challenge 2 - Fixed XOR
-- [ X ] Challenge 3 - Single-byte XOR cipher
-- [ X ] Challenge 4 - Detect single-character XOR
-- [ X ] Challenge 5 - Implement repeating-key XOR
-- [ X ] Challenge 6 - Break repeating-key XOR
-- [ X ] Challenge 7 - AES in ECB mode
-- [ X ] Challenge 8 - Detect AES in ECB mode
+- [x] Challenge 1 - Convert hex to base64
+- [x] Challenge 2 - Fixed XOR
+- [x] Challenge 3 - Single-byte XOR cipher
+- [x] Challenge 4 - Detect single-character XOR
+- [x] Challenge 5 - Implement repeating-key XOR
+- [x] Challenge 6 - Break repeating-key XOR
+- [x] Challenge 7 - AES in ECB mode
+- [x] Challenge 8 - Detect AES in ECB mode
 
 ## Set 2: Block Crypto
-- [ X ] Challenge 9 - Implement PKCS#7 padding
-- [ X ] Challenge 10 - Implement CBC mode
+- [x] Challenge 9 - Implement PKCS#7 padding
+- [x] Challenge 10 - Implement CBC mode
 - [ ] Challenge 11 - An ECB/CBC detection oracle **<-- TODO**
 - [ ] Challenge 12 - Byte-at-a-time ECB decryption (Simple)
 - [ ] Challenge 13 - ECB cut-and-paste
