@@ -46,6 +46,7 @@ dependencies = [
  "aes",
  "rand",
  "serialize",
+ "templar",
  "xor",
 ]
 
@@ -223,6 +224,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "templar"
+version = "0.1.0"
+dependencies = [
+ "aes",
+ "rand",
+ "serialize",
+ "xor",
 ]
 
 [[package]]

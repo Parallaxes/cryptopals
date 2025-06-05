@@ -1,9 +1,9 @@
 use openssl::symm::{Cipher, Crypter, Mode as SymmMode};
 use xor::Xor;
-use rand::Rng;
 
 static BLOCK_SIZE: usize = 16;
 
+#[derive(PartialEq)]
 pub enum Mode {
     CBC,
     ECB,
