@@ -3,6 +3,7 @@ use xor::Xor;
 
 static BLOCK_SIZE: usize = 16;
 
+#[derive(PartialEq, Debug)]
 pub enum Mode {
     CBC,
     ECB,

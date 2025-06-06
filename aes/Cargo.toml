@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 openssl = "0.10.72"
+rand = "0.9.1"
 
 serialize = { path = "../serialize" }
 xor = { path = "../xor" }
