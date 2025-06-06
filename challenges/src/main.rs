@@ -19,8 +19,8 @@ fn main() {
             "7" => set01::challenge07::run().unwrap(),
             "8" => set01::challenge08::run().unwrap(),
             _ => {
-                set01::challenge02::run().unwrap();
                 set01::challenge01::run().unwrap();
+                set01::challenge02::run().unwrap();
                 set01::challenge03::run().unwrap();
                 set01::challenge04::run().unwrap();
                 set01::challenge05::run().unwrap();
@@ -33,7 +33,11 @@ fn main() {
             "9" => set02::challenge09::run().unwrap(),
             "10" => set02::challenge10::run().unwrap(),
             "11" => set02::challenge11::run().unwrap(),
-            _ => panic!(),
+            _ => {
+                set02::challenge09::run().unwrap();
+                set02::challenge10::run().unwrap();
+                set02::challenge11::run().unwrap();
+            },
         },
         _ => panic!(),
     }

@@ -1,16 +1,12 @@
 use rand::Rng;
 use aes::Aes128;
 
-pub trait Oracles {
-    fn oracle_1(input: &[u8]) -> Vec<u8>;
-}
-
-pub struct Oracle1 {
+pub struct Oracle11 {
     pub ciphertext: Vec<u8>,
     pub mode: aes::Mode, 
 }
 
-impl Oracle1 {
+impl Oracle11 {
     pub fn new(input: &[u8]) -> Self {
         let mut rng = rand::rng();
         let mut key = [0u8; 16];
@@ -31,18 +27,25 @@ impl Oracle1 {
         buf.extend_from_slice(&input);
         buf.extend_from_slice(&suffix);
         let buf = buf.pad(16);
-        let mut result = buf.clone();
         
         if rng.random_range(1..=2) % 2 == 0 {
-            result = buf.encrypt(&key, None, aes::Mode::ECB).unwrap();
-            return Oracle1 { ciphertext: result, mode: aes::Mode::ECB };
+            let result = buf.encrypt(&key, None, aes::Mode::ECB).unwrap();
+            return Oracle11 { ciphertext: result, mode: aes::Mode::ECB };
         } else {
             let mut iv = vec![0u8; 16];
             rng.fill(&mut iv[..]);
-            result = buf.encrypt(&key, Some(&iv), aes::Mode::CBC).unwrap();
-            return Oracle1 { ciphertext: result, mode: aes::Mode::ECB };
+            let result = buf.encrypt(&key, Some(&iv), aes::Mode::CBC).unwrap();
+            return Oracle11 { ciphertext: result, mode: aes::Mode::CBC };
         }
     }
+}
+
+pub struct Oracle12 {
+    ciphertext: Vec<u8>,
+}
+
+impl Oracle12 {
+    
 }
 
 #[cfg(test)]

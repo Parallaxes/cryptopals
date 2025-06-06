@@ -1,22 +1,21 @@
-use aes::Aes128;
-use rand::Rng;
-use templar::Oracle1;
+use templar::Oracle11;
 use std::collections::HashSet;
 
 pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     print!("Set 02 Challenge 11: ");
 
-    let input = b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-    let oracle = Oracle1::new(input);
-    let result = detect_ecb(&oracle.ciphertext);
-    
-    // TODO: *Major* fix
-    if result == oracle.mode {
-        println!("An ECB/CBC detection oracle was successful!");
-        Ok(())
-    } else {
-        Err("An ECB/CBC detection oracle".into())
+    let input = b"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    for _ in 0..10 {
+        let oracle = Oracle11::new(input);
+        let result = detect_ecb(&oracle.ciphertext);
+        if result != oracle.mode {
+            return Err("An ECB/CBC detection oracle failed!".into());
+        }
     }
+    
+    println!("An ECB/CBC detection oracle was successful!");
+    Ok(())
+    
 }
 
 fn detect_ecb(input: &[u8]) -> aes::Mode {
