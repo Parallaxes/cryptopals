@@ -1,5 +1,6 @@
 use rand::Rng;
 use aes::Aes128;
+use serialize::from_base64_file;
 
 pub struct Oracle11 {
     pub ciphertext: Vec<u8>,
@@ -42,10 +43,24 @@ impl Oracle11 {
 
 pub struct Oracle12 {
     ciphertext: Vec<u8>,
+    key: Vec<u8>,
 }
 
 impl Oracle12 {
-    
+    pub fn new(input: &[u8], key: &[u8]) -> Self {
+        
+    }
+
+    pub fn gen_key() -> Vec<u8> {
+        let mut rng = rand::rng();
+        let mut key = [0u8; 16];
+
+        for byte in key.iter_mut() {
+            *byte = rng.random();
+        }
+
+        key.to_vec()
+    }
 }
 
 #[cfg(test)]
