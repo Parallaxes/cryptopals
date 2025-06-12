@@ -13,7 +13,7 @@
 ## Set 2: Block Crypto
 - [x] Challenge 9 - Implement PKCS#7 padding
 - [x] Challenge 10 - Implement CBC mode
-- [ ] Challenge 11 - An ECB/CBC detection oracle **<-- TODO**
+- [x] Challenge 11 - An ECB/CBC detection oracle
 - [ ] Challenge 12 - Byte-at-a-time ECB decryption (Simple)
 - [ ] Challenge 13 - ECB cut-and-paste
 - [ ] Challenge 14 - Byte-at-a-time ECB decryption (Harder)
